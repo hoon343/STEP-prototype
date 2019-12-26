@@ -5,6 +5,7 @@
 #include <chrono>
 #include <string>
 #include <map>
+#include <fstream>
 
 #include "uvw.hpp"
 #include <boost/serialization/string.hpp>
@@ -15,60 +16,6 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <iostream>
 #include <random>
-#define LIMITER 2
-#define HOTIP "143.248.55.106"
-#define HOTPORT 55459
-/*
-#define UV_HANDLE_WRITABLE 32768
-typedef struct {
-uv_write_t req;
-uv_buf_t buf;
-} write_req_t;
-void on_send(uv_write_t* req, int status) {
-printf("callback\n");
-write_req_t* wr = (write_req_t*)req;
-free(wr->buf.base);
-free(wr);
-}
-void send_message(uv_tcp_t* socket, char message[], int len) {
-char* s_message = (char*)malloc(len);
-strcpy_s(s_message, len, message);
-uv_buf_t* buf = (uv_buf_t*)malloc(sizeof(uv_buf_t));
-*buf = uv_buf_init(s_message, len);
-buf->len = len;
-buf->base = s_message;
-
-write_req_t* req = (write_req_t*)malloc(sizeof(write_req_t));
-req->buf = uv_buf_init(buf->base, len);
-uv_write((uv_write_t*)req, (uv_stream_t*)socket, &req->buf, 1, on_send);
-printf("message sent\n");
-free(buf);
-free(s_message);
-}
-int main() {
-
-//loop
-uv_loop_t* loop = uv_default_loop();
-uv_tcp_t* socket = (uv_tcp_t*)malloc(sizeof(uv_tcp_t));
-uv_tcp_init(loop, socket);
-
-//Connection
-uv_connect_t* connect = (uv_connect_t*)malloc(sizeof(uv_connect_t));
-struct sockaddr_in dest;
-uv_ip4_addr("0.0.0.0", 7000, &dest);
-uv_tcp_connect(connect, socket, (const struct sockaddr*) & dest, NULL);
-socket->flags |= UV_HANDLE_WRITABLE;
-
-
-while (1) {
-//Message
-
-char message[] = "Hi there";
-send_message(socket, message, sizeof(message));
-
-}
-return 0;
-}*/
 
 std::random_device rd;
 std::mt19937 mer(rd());
@@ -141,8 +88,6 @@ private:
 	//private:
 	friend class boost::serialization::access;
 	template<class Archive> void serialize(Archive& ar, const unsigned int version) {
-		//ar& boost::serialization::base_object<something>(*this);
-		//boost::serialization::void_cast_register(static_cast<something*>(NULL),static_cast<something *>(NULL));
 		ar& from;
 		ar& to;
 		ar& amount;
@@ -176,6 +121,9 @@ int elapsed = 0;
 int tx_cnt = 0;
 int txx_cnt = 0;
 int times = 0;
+std::string hotip;
+int hotport;
+int limiter;
 
 int main() {
 
@@ -185,15 +133,29 @@ int main() {
 		printf("tcp: %s (%s)\n", e.what(), e.name());
 	});
 
+	auto setting = loop->resource<uvw::TimerHandle>();
+
 	auto init = loop->resource<uvw::TimerHandle>();
 	init->stop();
 
 	auto idle = loop->resource<uvw::TimerHandle>();
 	idle->stop();
 
+	//initialization
+	setting->on<uvw::TimerEvent>([&](const uvw::TimerEvent&, uvw::TimerHandle& setting) {
+		std::ifstream in("setting.txt");
+		in >> hotip;
+		in >> hotport;
+		in >> limiter;
+		tcp->connect(hotip, hotport);
+		setting.stop();
+	});
+
 	init->on<uvw::ErrorEvent>([](const uvw::ErrorEvent e, uvw::TimerHandle& i) {
 		printf("init: %s (%s)\n", e.what(), e.name());
 	});
+
+	//registering 100 accounts
 	init->on<uvw::TimerEvent>([&](const uvw::TimerEvent&, uvw::TimerHandle& init) {
 	
 		random_transaction* k;
@@ -214,7 +176,7 @@ int main() {
 		delete k;
 
 		if (total_user >= 100) {
-			idle->start((std::chrono::duration < uint64_t, std::milli>)0, (std::chrono::duration<uint64_t, std::milli>)LIMITER);
+			idle->start((std::chrono::duration < uint64_t, std::milli>)0, (std::chrono::duration<uint64_t, std::milli>)limiter);
 			init.stop();
 		}
 
@@ -228,18 +190,13 @@ int main() {
 		random_transaction* k;
 		k = new random_transaction(false);
 
-		//oa << k;
-		//s.flush();
 		std::string serialized = tr_serializer(k);
-		//std::cout << serialized << std::endl;
 
 		auto dataWrite = std::unique_ptr<char[]>(new char[256]);
 
 		std::vector<char> writable(serialized.begin(), serialized.end());
 		writable.insert(writable.begin(), 'T');
 		std::copy(writable.begin(), writable.end(), dataWrite.get());
-		//dataWrite[serial_str.size()] = '\0';
-
 
 		auto res = tcp->tryWrite(std::move(dataWrite), 256);
 		tx_cnt++;
@@ -247,7 +204,7 @@ int main() {
 		elapsed++;
 		delete k;
 
-		if (elapsed*LIMITER >= 5000) {
+		if (elapsed*limiter >= 5000) {
 			printf("Transactions: %d\nFailed: %d\n", tx_cnt,txx_cnt);
 			tx_cnt = 0;
 			txx_cnt = 0;
@@ -270,10 +227,8 @@ int main() {
 
 	tcp->noDelay(false);
 	tcp->blocking(true);
-	tcp->connect(HOTIP, HOTPORT);
-	//wait_time = clock();
-	//tcp->listen();
 
+	setting->start((std::chrono::duration < uint64_t, std::milli>)0, (std::chrono::duration<uint64_t, std::milli>)100);
 	printf("loopgen\n");
 	loop->run();
 
