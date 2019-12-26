@@ -7,7 +7,6 @@
 #include"eccrypto.h"
 #include"sha.h"
 #include"osrng.h"
-//#include"asn.h"
 #include"oids.h"
 #include"hex.h"
 #include"base64.h"
@@ -45,7 +44,7 @@ public:
 	Transaction(string tr_from, string tr_to, unsigned long long int tr_amount);
 	//Transaction(string serial_str);
 
-	//function
+	//methods
 	string serializer();
 	static Transaction* deserializer(string serial_str);
 	static vector<Transaction> vec_deserializer(string serial_str);
@@ -55,16 +54,10 @@ public:
 	string GetTo();
 	unsigned long long int GetAmount();
 
-	//sets
-	//void SetId1(string id);
-	//void SetId2(string id);
-
 private:
 	string from;
 	string to;
 	unsigned long long int amount;
-	//string id1;
-	//string id2;
 
 	//for serialization
 	friend class boost::serialization::access;
@@ -72,8 +65,6 @@ private:
 		ar& from;
 		ar& to;
 		ar& amount;
-		//ar& id1;
-		//ar& id2;
 	}
 
 };
@@ -104,7 +95,7 @@ public:
 	//gets
 	string GetValidatee();
 
-	//function
+	//methods
 	bool ValidateDpf(string message);
 
 private:
@@ -156,11 +147,9 @@ public:
 	//methods
 	void push_transaction(Transaction* block_transaction);
 	void push_transactions(vector<Transaction> block_transactions);
-	//void set_transactions(vector<Transaction>* transaction_vector);
 	void push_claim(EncryptedProof& block_proof);
 	bool validate_transactions();
 	static bool validate_transaction(Transaction tx);
-	//bool validate_claim();
 	string serializer();
 	static Block* deserializer(string serial_str);
 	string merkleroot(string id1, string id2);
@@ -183,8 +172,6 @@ private:
 	//for serialize
 	friend class boost::serialization::access;
 	template<class Archive> void serialize(Archive& ar, const unsigned int version) {
-		//ar& boost::serialization::base_object<something>(*this);
-		//boost::serialization::void_cast_register(static_cast<something*>(NULL),static_cast<something *>(NULL));
 		ar& number;
 		ar& prev_hash;
 		ar& random_value;

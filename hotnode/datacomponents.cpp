@@ -47,22 +47,8 @@ map <string, Account*> accounts;
 		to = tr_to;
 		amount = tr_amount;
 	}
-	 /*Transaction::Transaction(std::string serial_str) {//deserializer
 
-		Transaction* l;
-		boost::iostreams::basic_array_source<char> device(serial_str.c_str(), serial_str.size());
-		boost::iostreams::stream<boost::iostreams::basic_array_source<char> > u(device);
-		boost::archive::binary_iarchive ia(u);
-		ia >> l;
-		to = l->GetTo();
-		from = l->GetFrom();
-		amount = l->GetAmount();
-		delete l;
-
-	}*/
-
-
-	//function
+	//methods
 	string Transaction::serializer() {//serializer
 		std::string serial_str;
 		boost::iostreams::back_insert_device<std::string> inserter(serial_str);
@@ -96,10 +82,6 @@ map <string, Account*> accounts;
 	string Transaction::GetFrom() { return from; }
 	string Transaction::GetTo() { return to; }
 	unsigned long long int Transaction::GetAmount() { return amount; }
-
-	//sets
-	//void Transaction::SetId1(string id) { id1 = id; }
-	//void Transaction::SetId2(string id) { id2 = id; }
 
 //}
 
@@ -138,8 +120,6 @@ map <string, Account*> accounts;
 			) // Base64Decoder
 		); // StringSource
 
-		//printf("decoded: %s\npublicstring: %s\n", decoded.c_str(), validatee.c_str());
-
 		bool result = false;
 		StringSource vfer(decoded + message + validatee, true /*pump all*/, 
 			new SignatureVerificationFilter(
@@ -157,6 +137,8 @@ map <string, Account*> accounts;
 //}
 
 //EncryptedProof{
+
+	//constructor
 	EncryptedProof::EncryptedProof() {}
 	EncryptedProof::EncryptedProof(unsigned long long int e_blocknumber, vector<unsigned char> e_encrypted, CryptoPP::SecByteBlock& e_key, CryptoPP::SecByteBlock& e_iv) {
 		blocknumber = e_blocknumber;
@@ -164,6 +146,8 @@ map <string, Account*> accounts;
 		for (int i = 0; i < 32; i++) key.push_back(e_key.BytePtr()[i]);
 		for (int i = 0; i < 16; i++) iv.push_back(e_iv.BytePtr()[i]);
 	}
+
+	//gets
 	unsigned long long int EncryptedProof::GetBlocknumber(){ return blocknumber; }
 	vector<unsigned char>& EncryptedProof::GetEncrypted(){ return encrypted; }
 	vector<unsigned char>& EncryptedProof::GetKey(){ return key; }
@@ -186,9 +170,6 @@ map <string, Account*> accounts;
 	void Block::push_transactions(vector<Transaction> block_transactions) {
 		for (auto it : block_transactions) transactions.push_back(it);
 	}
-	/*void Block::set_transactions(vector<Transaction>* transaction_vector) {
-		transactions = transaction_vector;
-	}*/
 	void Block::push_claim(EncryptedProof& block_proof) {
 		claim.push_back(block_proof);
 	}
@@ -200,7 +181,6 @@ map <string, Account*> accounts;
 			//if tx is invalid
 			if (tx.GetFrom() == "init") {
 				new Account(tx.GetTo(), tx.GetAmount());
-				//accounts[tx.GetTo()]->SetValance(accounts[tx.GetTo()]->GetValance() + tx.GetAmount());
 			}
 			else if (accounts[tx.GetFrom()]->GetValance() < tx.GetAmount()) {
 				chrono::system_clock::time_point end = chrono::system_clock::now();
@@ -225,7 +205,6 @@ map <string, Account*> accounts;
 		//if tx is invalid
 		if (tx.GetFrom() == "init") {
 			new Account(tx.GetTo(), tx.GetAmount());
-			//accounts[tx.GetTo()]->SetValance(accounts[tx.GetTo()]->GetValance() + tx.GetAmount());
 			return true;
 		}
 		else if (accounts[tx.GetFrom()]->GetValance() < tx.GetAmount()) {
@@ -240,39 +219,6 @@ map <string, Account*> accounts;
 		}
 		return false;
 	}
-
-/*	bool Block::validate_claim() {
-		for (int i = 0; i < claim.size(); i++) {
-
-			//Get key and iv
-			SecByteBlock key(32);
-			for (int j = 0; j < 32; j++) key.data()[j] = claim[i].GetKey()[j];
-			SecByteBlock iv(16);
-			for (int j = 0; j < 16; j++) iv.data()[j] = claim[i].GetIv()[j];
-
-			//Decrypt AES
-			auto pbyte = unique_ptr<byte[]>(new byte[claim[i].GetEncrypted().size() + 1]);
-			copy(claim[i].GetEncrypted().begin(), claim[i].GetEncrypted().end(), pbyte.get());
-			auto decrypted = unique_ptr<byte[]>(new byte[claim[i].GetEncrypted().size() + 1]);
-			CFB_Mode<AES>::Decryption aesDecryption(key, key.size(), iv);
-			aesDecryption.ProcessData(decrypted.get(), pbyte.get(), claim[i].GetEncrypted().size() + 1);
-
-			//Deserialize Decryption
-			vector<DecryptedProof> current_proof;
-			boost::iostreams::basic_array_source<char> device((char*)decrypted.get(), claim[i].GetEncrypted().size() + 1);
-			boost::iostreams::stream<boost::iostreams::basic_array_source<char> > u(device);
-			boost::archive::binary_iarchive ia(u);
-			ia >> current_proof;
-			for (int j = 0; j < current_proof.size(); j++) {
-				if (!current_proof[j].ValidateDpf(this->merkleroot("", ""))) {
-					printf("Proof incorrect\n");
-					return false;
-				}
-			}
-		}
-		printf("Proof correct\n");
-		return true;
-	}*/
 
 	string Block::serializer() {
 		std::string serial_str;
