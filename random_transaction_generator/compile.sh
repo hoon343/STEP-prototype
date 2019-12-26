@@ -1,0 +1,1 @@
+g++ -o rtg main.cpp -std=gnu++14 -static -std=gnu++14 -static -Wall -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -luv -lboost_serialization -lboost_wserialization -I./lib/uv -I/home/ubuntu/boost_1_70_0
