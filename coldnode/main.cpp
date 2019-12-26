@@ -30,8 +30,6 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
-//#define IP "143.248.55.106"
-//#define HOTPORT 5459
 using namespace std;
 using namespace CryptoPP;
 
@@ -64,11 +62,6 @@ class peerinfo {
 public:
 	//constructor
 	peerinfo() {}
-	/*peerinfo(shared_ptr<uvw::TCPHandle> soc, string encoded, ECDSA<ECP, SHA256>::PublicKey decoded) {
-		socket = soc;
-		encodedkey = encoded;
-		decodedkey = decoded;
-	}*/
 	shared_ptr<uvw::TCPHandle> socket;
 	string encodedkey;
 	ECDSA<ECP, SHA256>::PublicKey* decodedkey;
@@ -128,7 +121,6 @@ int main() {
 	auto workqueue = loop->resource<uvw::IdleHandle>();
 	
 	queue<proofcomponent> q;
-	//map<string, pair<shared_ptr<uvw::TCPHandle>,string> > m; //(ip,<socket,key>)
 	map<string, peerinfo*> m; //(ip,<socket,key>)
 	map<uvw::TCPHandle*, pair<string, int> >connection;
 	AutoSeededRandomPool prng;
@@ -175,7 +167,6 @@ int main() {
 			auto tmp = loop->resource<uvw::TCPHandle>();
 
 			tmp->on<uvw::ErrorEvent>([&](const uvw::ErrorEvent e, uvw::TCPHandle& t) {
-				//printf("Peer %s, %d: %s (%s) Retrying...\n", connection[&t].first.c_str(), connection[&t].second, e.what(), e.name());
 				t.connect(connection[&t].first, connection[&t].second);
 			});
 
@@ -183,9 +174,7 @@ int main() {
 				auto pubonce = unique_ptr<char[]>(new char[pbksize]);
 				copy(&pubdata[0], &pubdata[pbksize], pubonce.get());
 				printf("Peer connected: %s, %d\n", tmp.peer().ip.c_str(), tmp.peer().port);
-				//printf("writing key: %s\n", &pubonce.get()[1]);
 				int writeresult = tmp.tryWrite(move(pubonce), pbksize);
-				//printf("writed key:  %s\n size: %d\n", &pubdata.get()[1], writeresult);
 			});
 
 			m[ip] = new peerinfo();
@@ -200,14 +189,12 @@ int main() {
 
 		fromhot->bind(myip, hotport);
 		fromcold->bind(myip, coldport);
-		//printf("fromhot:%s, %d\nfromcold:%s, %d\n", fromhot->peer().ip.c_str(), fromhot->peer().port, fromcold->peer().ip.c_str(), fromcold->peer().port);
 		fromhot->listen();
 		fromcold->listen();
 		tohot->on<uvw::ConnectEvent>([](const uvw::ConnectEvent&, uvw::TCPHandle& tcp) {
 			printf("Hot node connected\n");
 		});
 		tohot->on<uvw::ErrorEvent>([&](const uvw::ErrorEvent e, uvw::TCPHandle& tohot) {
-			//printf("tohot: %s (%s) Retrying...\n", e.what(), e.name());
 			tohot.connect(hotip, tohotport);
 		});
 		if (ismain == 1) {
@@ -253,31 +240,18 @@ int main() {
 			t_buffer[&t].clear();
 
 			//validating block
-			//chrono::system_clock::time_point coldvalidation_start = chrono::system_clock::now();
 			if (recv_block->validate_transactions() && validate_claim(*recv_block)) {
-				//chrono::system_clock::time_point coldvalidation_end = chrono::system_clock::now();
-				//printf("Received Block %d\n", recv_block->GetNumber());
-				//chrono::nanoseconds coldduration = chrono::duration_cast<chrono::nanoseconds>(coldvalidation_end - coldvalidation_start);
-				//printf("Block %d validated in %d nanoseconds.\n",recv_block->GetNumber(), coldduration.count());
 				ledger[recv_block->GetNumber()] = recv_block;
 
 				//generating pure merkle root
-				//chrono::system_clock::time_point puremerkle_start = chrono::system_clock::now();
 				pure_merkles[recv_block->GetNumber()] = recv_block->merkleroot("","");
-				//chrono::system_clock::time_point puremerkle_end = chrono::system_clock::now();
-				//chrono::nanoseconds puremerkleduration = chrono::duration_cast<chrono::nanoseconds>(puremerkle_end - puremerkle_start);
-				//printf("Pure merkle root on block %d is generated in %d nanoseconds.\n", recv_block->GetNumber(), puremerkleduration.count());
 
 				//send to every cold to collect proofs
 				for (map<string, peerinfo*>::iterator iter = m.begin(); iter != m.end();iter++) {
 					//generating merkle root with peerid
 					string mroot;
-					//chrono::system_clock::time_point peermerkle_start = chrono::system_clock::now();
 					printf("Peer merkle root with %s on block %d\n", iter->second->socket->peer().ip.c_str(), recv_block->GetNumber());
 					mroot = recv_block->merkleroot(publicstring, iter->second->encodedkey);
-					//chrono::system_clock::time_point peermerkle_end = chrono::system_clock::now();
-					//chrono::nanoseconds peermerkleduration = chrono::duration_cast<chrono::nanoseconds>(peermerkle_end - peermerkle_start);
-					//printf("Peer merkle root with %s on block %d is generated in %d nanoseconds.\n", iter->second->socket->peer().ip.c_str(), recv_block->GetNumber(), peermerkleduration.count());
 					
 					//string to char[]: M+(cipher(hex))+(blocknumstr(hex))+(mroot)
 					char blocknumstr[10];
@@ -450,20 +424,6 @@ int main() {
 					CFB_Mode<AES>::Encryption cfbEncryption(key, key.size(), iv);
 					cfbEncryption.ProcessData(encrypted.get(), dataWrite.get(), messageLen);
 					
-					/*
-					//Decrypt for test
-					vector<DecryptedProof> tmpproofs;
-					auto decrypted = unique_ptr<byte[]>(new byte[messageLen]);
-					CFB_Mode<AES>::Decryption aesDecryption(key, key.size(), iv);
-					aesDecryption.ProcessData(decrypted.get(), encrypted.get(), messageLen);
-
-					boost::iostreams::basic_array_source<char> device((char*)decrypted.get(), messageLen);
-					boost::iostreams::stream<boost::iostreams::basic_array_source<char> > u(device);
-					boost::archive::binary_iarchive ia(u);
-					ia >> tmpproofs;
-					*/
-
-
 
 					//send to every cold nodes
 					char blocknumstr[10];
@@ -478,14 +438,6 @@ int main() {
 					for (int i = 0; i < messageLen; i++) prfvec.push_back(encrypted[i]);
 					//prfvec.insert(prfvec.end(), encrypted.get(), &encrypted.get()[messageLen-1]);
 					int prfsize = prfvec.size() + 1;
-					//FIXed!!!
-					/*
-					for (map<string, peerinfo*>::iterator iter = m.begin(); iter != m.end(); iter++) {
-						auto prfdata = unique_ptr<char[]>(new char[prfsize]);
-						copy(prfvec.begin(), prfvec.end(), prfdata.get());
-						prfdata[prfvec.size()] = '\0';
-						iter->second->socket->write(move(prfdata), prfsize);
-					}*/
 
 					//main cold node have to send her key and iv to hot node
 					//string to char[]: p+(bytes(hex))+(blocksizestr(hex))+(cipher(hex))+(blocknumstr(hex))+(AESkey(32byte))+(AESiv(16byte))+(encoded)
@@ -511,15 +463,8 @@ int main() {
 						tohot->write(move(pkdata),pksize);
 						printf("Proof and key are sent to hot node. Size: %d\n", pksize);
 					}
-
-					//printf("ismain:%d\n", ismain);
-
 				}
-
 			}
-			/*else if (c_buffer[&client][0] == 'P') {
-				printf("Received proof\n");
-			}*/
 		});
 		fromcold.accept(*client);
 		client->read();
@@ -572,7 +517,6 @@ int main() {
 			signvec.push_back('S');//S for sign
 			signvec.push_back(cipher + '0');
 			for (int i = 0; i < cipher; i++) signvec.push_back(blocknumstr[i]);
-			//mervec.insert(mervec.begin() + 1, blocknumstr, &blocknumstr[cipher]);
 			signvec.insert(signvec.end(), encoded.begin(), encoded.end());
 			int signsize = signvec.size() + 1;
 			auto merdata = unique_ptr<char[]>(new char[signsize]);
