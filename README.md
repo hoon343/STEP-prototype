@@ -10,8 +10,7 @@
 
 * uvw : https://github.com/skypjack/uvw
 
-
-![Evaluation](./image/Evaluation.png)
+![evaluation](https://user-images.githubusercontent.com/151162/71569878-6199d300-2b15-11ea-95ff-3b37a96aac31.png)
 
 본 repository는 단순한 성능 측정만을 목적으로 하며, 아래와 같은 세 파트로 구분되어 있습니다.
 1. Random Transaction Generator
