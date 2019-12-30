@@ -2,13 +2,13 @@
 
 본 repository는 제 졸업논문의 prototype을 구현한 코드를 포함하고 있습니다. 코드는 C++ 14 기준으로 작성되었고, 다음과 같은 라이브러리를 필요로 합니다.
 
-* boost : https://www.boost.org/
-* cryptopp : https://www.cryptopp.com/
-* libuv : https://libuv.org/
+* boost (1.70.0) : https://www.boost.org/
+* cryptopp (8.2) : https://www.cryptopp.com/
+* libuv (1.30.0) : https://libuv.org/
 
 그리고 다음과 같은 wrapper를 요구합니다.
 
-* uvw : https://github.com/skypjack/uvw
+* uvw (1.18.0) : https://github.com/skypjack/uvw
 
 ![evaluation](https://user-images.githubusercontent.com/151162/71569878-6199d300-2b15-11ea-95ff-3b37a96aac31.png)
 
