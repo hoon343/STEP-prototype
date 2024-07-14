@@ -1,3 +1,7 @@
+# Profile
+
+[![Solved.ac프로필](http://mazassumnida.wtf/api/generate_badge?boj=hoon343)](https://solved.ac/hoon343)
+
 # STEP-prototype
 
 본 repository는 제 졸업논문의 prototype을 구현한 코드를 포함하고 있습니다. 코드는 C++ 14 기준으로 작성되었고, 다음과 같은 라이브러리를 필요로 합니다.
