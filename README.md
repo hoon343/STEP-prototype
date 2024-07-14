@@ -1,6 +1,6 @@
 # Profile
 
-[![Solved.ac프로필](http://mazassumnida.wtf/api/v2/generate_badge?boj=hoon343)](https://solved.ac/hoon343)
+[![Solved.ac프로필](http://mazassumnida.wtf/api/v2/generate_badge?boj=hoon343)](https://solved.ac/profile/hoon343)
 
 # STEP-prototype
 
